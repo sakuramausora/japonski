@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hiragana to Romaji Practice</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      margin-top: 50px;
+      text-align: center;
+    }
+    .hiragana {
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    .input-group {
+      margin: 10px 0;
+    }
+    input {
+      padding: 10px;
+      font-size: 1em;
+      width: 80%;
+      margin-right: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 1em;
+    }
+    .result {
+      margin-top: 15px;
+      font-size: 1.2em;
+    }
+    #nextButton {
+      margin-top: 15px;
+      display: none;
+    }
+    #correctImage {
+      position: fixed;
+      left: -300px;
+      transition: left 1s;
+      width: 200px;
+      height: auto;
+    }
+    #correctImage.show {
+      left: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Hiragana to Romaji Practice</h1>
+  <div class="hiragana" id="hiraganaDisplay">あい</div>
+  
+  <div class="input-group">
+    <input type="text" id="romajiInput" placeholder="Enter Romaji" />
+    <button onclick="checkAnswer()">Submit</button>
+  </div>
+  
+  <div class="result" id="resultMessage"></div>
+  <button id="nextButton" onclick="getNewWord()">Next Question</button>
+</div>
+
+<img src="https://raw.githubusercontent.com/sakuramausora/japonski/refs/heads/main/Emu.webp" id="correctImage" alt="Correct Answer Emu" />
+
+<script>
+const words = [
+  // "あ" series
+  { hiragana: "あい", romaji: "ai" },
+  { hiragana: "あさ", romaji: "asa" },
+  { hiragana: "あお", romaji: "ao" },
+  { hiragana: "あし", romaji: "ashi" },
+  { hiragana: "あめ", romaji: "ame" },
+  { hiragana: "あるく", romaji: "aruku" },
+  { hiragana: "あつい", romaji: "atsui" },
+  { hiragana: "あした", romaji: "ashita" },
+  { hiragana: "あいだ", romaji: "aida" },
+  { hiragana: "あう", romaji: "au" },
+
+  // "い" series
+  { hiragana: "いえ", romaji: "ie" },
+  { hiragana: "いぬ", romaji: "inu" },
+  { hiragana: "いけ", romaji: "ike" },
+  { hiragana: "いち", romaji: "ichi" },
+  { hiragana: "いもうと", romaji: "imouto" },
+  { hiragana: "いそがしい", romaji: "isogashii" },
+  { hiragana: "いし", romaji: "ishi" },
+  { hiragana: "いか", romaji: "ika" },
+  { hiragana: "いる", romaji: "iru" },
+  { hiragana: "いく", romaji: "iku" },
+
+  // "う" series
+  { hiragana: "うみ", romaji: "umi" },
+  { hiragana: "うた", romaji: "uta" },
+  { hiragana: "うち", romaji: "uchi" },
+  { hiragana: "うし", romaji: "ushi" },
+  { hiragana: "うそ", romaji: "uso" },
+  { hiragana: "うえ", romaji: "ue" },
+  { hiragana: "うま", romaji: "uma" },
+  { hiragana: "うける", romaji: "ukeru" },
+  { hiragana: "うごく", romaji: "ugoku" },
+  { hiragana: "うわさ", romaji: "uwasa" },
+
+  // "え" series
+  { hiragana: "えき", romaji: "eki" },
+  { hiragana: "えらぶ", romaji: "erabu" },
+  { hiragana: "えがお", romaji: "egao" },
+  { hiragana: "えん", romaji: "en" },
+  { hiragana: "えのぐ", romaji: "enogu" },
+  { hiragana: "えいが", romaji: "eiga" },
+  { hiragana: "えほん", romaji: "ehon" },
+  { hiragana: "えんぴつ", romaji: "enpitsu" },
+  { hiragana: "える", romaji: "eru" },
+  { hiragana: "えさ", romaji: "esa" },
+
+  // "お" series
+  { hiragana: "おとこ", romaji: "otoko" },
+  { hiragana: "おおきい", romaji: "ookii" },
+  { hiragana: "おかね", romaji: "okane" },
+  { hiragana: "おもい", romaji: "omoi" },
+  { hiragana: "おと", romaji: "oto" },
+  { hiragana: "おい", romaji: "oi" },
+  { hiragana: "おとす", romaji: "otosu" },
+  { hiragana: "おに", romaji: "oni" },
+  { hiragana: "おう", romaji: "ou" },
+  { hiragana: "おんな", romaji: "onna" },
+
+  // "か" series
+  { hiragana: "かさ", romaji: "kasa" },
+  { hiragana: "かわ", romaji: "kawa" },
+  { hiragana: "かお", romaji: "kao" },
+  { hiragana: "かみ", romaji: "kami" },
+  { hiragana: "かぞく", romaji: "kazoku" },
+  { hiragana: "かいしゃ", romaji: "kaisha" },
+  { hiragana: "かう", romaji: "kau" },
+  { hiragana: "かえる", romaji: "kaeru" },
+  { hiragana: "かぜ", romaji: "kaze" },
+  { hiragana: "かたち", romaji: "katachi" },
+
+  // "き" series
+  { hiragana: "きた", romaji: "kita" },
+  { hiragana: "きいろ", romaji: "kiiro" },
+  { hiragana: "きのこ", romaji: "kinoko" },
+  { hiragana: "きく", romaji: "kiku" },
+  { hiragana: "きもち", romaji: "kimochi" },
+  { hiragana: "きかい", romaji: "kikai" },
+  { hiragana: "きたない", romaji: "kitanai" },
+  { hiragana: "きゃく", romaji: "kyaku" },
+  { hiragana: "きょう", romaji: "kyou" },
+  { hiragana: "きつね", romaji: "kitsune" },
+
+  // "く" series
+  { hiragana: "くるま", romaji: "kuruma" },
+  { hiragana: "くち", romaji: "kuchi" },
+  { hiragana: "くも", romaji: "kumo" },
+  { hiragana: "くらい", romaji: "kurai" },
+  { hiragana: "くさい", romaji: "kusai" },
+  { hiragana: "くび", romaji: "kubi" },
+  { hiragana: "くじら", romaji: "kujira" },
+  { hiragana: "くらげ", romaji: "kurage" },
+  { hiragana: "くつ", romaji: "kutsu" },
+  { hiragana: "くうき", romaji: "kuuki" },
+
+  // "け" series
+  { hiragana: "けむり", romaji: "kemuri" },
+  { hiragana: "けいけん", romaji: "keiken" },
+  { hiragana: "けもの", romaji: "kemono" },
+  { hiragana: "けんこう", romaji: "kenkou" },
+  { hiragana: "けす", romaji: "kesu" },
+  { hiragana: "けっこん", romaji: "kekkon" },
+  { hiragana: "けが", romaji: "kega" },
+  { hiragana: "けいさつ", romaji: "keisatsu" },
+  { hiragana: "けいようし", romaji: "keiyoushi" },
+  { hiragana: "けんか", romaji: "kenka" },
+
+  // "こ" series
+  { hiragana: "こえ", romaji: "koe" },
+  { hiragana: "ことり", romaji: "kotori" },
+  { hiragana: "こども", romaji: "kodomo" },
+  { hiragana: "こい", romaji: "koi" },
+  { hiragana: "こたえる", romaji: "kotaeru" },
+  { hiragana: "こっけい", romaji: "kokkei" },
+  { hiragana: "こうえん", romaji: "kouen" },
+  { hiragana: "こま", romaji: "koma" },
+  { hiragana: "こと", romaji: "koto" },
+  { hiragana: "ころす", romaji: "korosu" },
+
+  // "さ" series
+  { hiragana: "さかな", romaji: "sakana" },
+  { hiragana: "さけ", romaji: "sake" },
+  { hiragana: "さくら", romaji: "sakura" },
+  { hiragana: "さき", romaji: "saki" },
+  { hiragana: "さむい", romaji: "samui" },
+  { hiragana: "さようなら", romaji: "sayounara" },
+  { hiragana: "さがす", romaji: "sagasu" },
+  { hiragana: "さきほど", romaji: "sakihodo" },
+  { hiragana: "さそう", romaji: "sasou" },
+  { hiragana: "さけぶ", romaji: "sakebu" },
+
+  // "し" series
+  { hiragana: "しろ", romaji: "shiro" },
+  { hiragana: "した", romaji: "shita" },
+  { hiragana: "しぬ", romaji: "shinu" },
+  { hiragana: "しま", romaji: "shima" },
+  { hiragana: "しんじる", romaji: "shinjiru" },
+  { hiragana: "しずか", romaji: "shizuka" },
+  { hiragana: "しか", romaji: "shika" },
+  { hiragana: "したがう", romaji: "shitagau" },
+  { hiragana: "しる", romaji: "shiru" },
+  { hiragana: "しあわせ", romaji: "shiawase" },
+
+  // "す" series
+  { hiragana: "すいえい", romaji: "suiei" },
+  { hiragana: "すいか", romaji: "suika" },
+  { hiragana: "すこし", romaji: "sukoshi" },
+  { hiragana: "すき", romaji: "suki" },
+  { hiragana: "すずしい", romaji: "suzushii" },
+  { hiragana: "すな", romaji: "suna" },
+  { hiragana: "すすめる", romaji: "susumeru" },
+  { hiragana: "すばらしい", romaji: "subarashii" },
+  { hiragana: "すくう", romaji: "sukuu" },
+  { hiragana: "すべて", romaji: "subete" },
+
+  // "せ" series
+  { hiragana: "せんせい", romaji: "sensei" },
+  { hiragana: "せかい", romaji: "sekai" },
+  { hiragana: "せき", romaji: "seki" },
+  { hiragana: "せなか", romaji: "senaka" },
+  { hiragana: "せんたく", romaji: "sentaku" },
+  { hiragana: "せいかく", romaji: "seikaku" },
+  { hiragana: "せおう", romaji: "seou" },
+  { hiragana: "せまい", romaji: "semai" },
+  { hiragana: "せんこう", romaji: "senkou" },
+  { hiragana: "せっけん", romaji: "sekken" },
+
+  // "そ" series
+  { hiragana: "そと", romaji: "soto" },
+  { hiragana: "そうぞう", romaji: "souzou" },
+  { hiragana: "そば", romaji: "soba" },
+  { hiragana: "そまつ", romaji: "somatsu" },
+  { hiragana: "そくど", romaji: "sokudo" },
+  { hiragana: "それ", romaji: "sore" },
+  { hiragana: "そだつ", romaji: "sodatsu" },
+  { hiragana: "そうじ", romaji: "souji" },
+  { hiragana: "そくほう", romaji: "sokuhou" },
+  { hiragana: "そら", romaji: "sora" },
+
+  // "た" series
+  { hiragana: "たべる", romaji: "taberu" },
+  { hiragana: "たかい", romaji: "takai" },
+  { hiragana: "たのしい", romaji: "tanoshii" },
+  { hiragana: "たまご", romaji: "tamago" },
+  { hiragana: "たつ", romaji: "tatsu" },
+  { hiragana: "たいせつ", romaji: "taisetsu" },
+  { hiragana: "たび", romaji: "tabi" },
+  { hiragana: "たずねる", romaji: "tazuneru" },
+  { hiragana: "たくさん", romaji: "takusan" },
+  { hiragana: "たまに", romaji: "tamani" },
+
+  // "ち" series
+  { hiragana: "ちいさい", romaji: "chiisai" },
+  { hiragana: "ちから", romaji: "chikara" },
+  { hiragana: "ちず", romaji: "chizu" },
+  { hiragana: "ちゃいろ", romaji: "chairo" },
+  { hiragana: "ちかい", romaji: "chikai" },
+  { hiragana: "ちゅうい", romaji: "chuui" },
+  { hiragana: "ちょっと", romaji: "chotto" },
+  { hiragana: "ちがう", romaji: "chigau" },
+  { hiragana: "ちり", romaji: "chiri" },
+
+  // "つ" series
+  { hiragana: "つき", romaji: "tsuki" },
+  { hiragana: "つかう", romaji: "tsukau" },
+  { hiragana: "つづく", romaji: "tsuzuku" },
+  { hiragana: "つなぐ", romaji: "tsunagu" },
+  { hiragana: "つくる", romaji: "tsukuru" },
+  { hiragana: "つかれる", romaji: "tsukareru" },
+  { hiragana: "つつむ", romaji: "tsutsumu" },
+  { hiragana: "つめたい", romaji: "tsumetai" },
+  { hiragana: "つよい", romaji: "tsuyoi" },
+  { hiragana: "つち", romaji: "tsuchi" },
+
+  // "て" series
+  { hiragana: "てら", romaji: "tera" },
+  { hiragana: "てがみ", romaji: "tegami" },
+  { hiragana: "てつ", romaji: "tetsu" },
+  { hiragana: "てらす", romaji: "terasu" },
+  { hiragana: "てんき", romaji: "tenki" },
+  { hiragana: "ていねい", romaji: "teinei" },
+  { hiragana: "てき", romaji: "teki" },
+  { hiragana: "てをあげる", romaji: "tewoageru" },
+  { hiragana: "てんさい", romaji: "tensai" },
+  { hiragana: "てがた", romaji: "tegata" },
+
+  // "と" series
+  { hiragana: "とり", romaji: "tori" },
+  { hiragana: "とぶ", romaji: "tobu" },
+  { hiragana: "とけい", romaji: "tokei" },
+  { hiragana: "ともだち", romaji: "tomodachi" },
+  { hiragana: "とし", romaji: "toshi" },
+  { hiragana: "とおい", romaji: "tooi" },
+  { hiragana: "とじる", romaji: "tojiru" },
+  { hiragana: "とおる", romaji: "tooru" },
+  { hiragana: "とくい", romaji: "tokui" },
+  { hiragana: "とうげ", romaji: "touge" },
+// Adding words with "ぎょ" (gyo) series
+{ hiragana: "ぎょうじ", romaji: "gyouji" }, // event
+{ hiragana: "ぎょかい", romaji: "gyokai" }, // seafood industry
+{ hiragana: "ぎょえん", romaji: "gyoen" }, // imperial garden
+
+// Adding words with "ぷ" (pu) series
+{ hiragana: "ぷろぐらむ", romaji: "puroguramu" }, // program
+{ hiragana: "ぷれぜん", romaji: "purezen" }, // present
+{ hiragana: "ぷりんと", romaji: "purinto" }, // print
+
+// Adding words with "みゃ" (mya) series
+{ hiragana: "みゃく", romaji: "myaku" }, // pulse
+{ hiragana: "みゃくはく", romaji: "myakuhaku" }, // heartbeat
+{ hiragana: "みゃくらく", romaji: "myakuraku" }, // coherence
+
+// Adding "はなぢ" (hanaji) specifically
+{ hiragana: "はなぢ", romaji: "hanaji" }, // nosebleed
+
+// Example additions for other mixed combinations
+
+// "りゃ" series
+{ hiragana: "りゃく", romaji: "ryaku" }, // abbreviation
+{ hiragana: "りゃくご", romaji: "ryakugo" }, // abbreviated word
+
+// "びょ" series
+{ hiragana: "びょうどう", romaji: "byoudou" }, // equality
+{ hiragana: "びょういん", romaji: "byouin" }, // hospital
+
+// "じゃ" series (additional example)
+{ hiragana: "じゃがいも", romaji: "jagaimo" }, // potato
+
+// "ひょ" series
+{ hiragana: "ひょう", romaji: "hyou" }, // vote
+{ hiragana: "ひょうか", romaji: "hyouka" }, // evaluation
+
+// "ぴょ" series
+{ hiragana: "ぴょんぴょん", romaji: "pyonpyon" }, // hopping
+
+// "みゅ" series (additional example)
+{ hiragana: "みゅーと", romaji: "myuuto" }, // mute
+{ hiragana: "みゅーじっく", romaji: "myuujikku" }, // music
+
+
+];
+
+let currentWord = {};
+
+// Function to display a new Hiragana word
+function getNewWord() {
+  currentWord = words[Math.floor(Math.random() * words.length)];
+  document.getElementById("hiraganaDisplay").textContent = currentWord.hiragana;
+  document.getElementById("romajiInput").value = "";
+  document.getElementById("resultMessage").textContent = "";
+  document.getElementById("nextButton").style.display = "none";
+  document.getElementById("correctImage").classList.remove("show");
+  document.getElementById("romajiInput").focus(); // Focus on the input field
+}
+
+// Function to process hyphenated Romaji input
+function normalizeRomaji(input) {
+  // Remove hyphens and replace with continuous Romaji for easier matching
+  return input.replace(/-/g, "").toLowerCase();
+}
+
+// Function to check the user's answer
+function checkAnswer() {
+  const userAnswer = normalizeRomaji(document.getElementById("romajiInput").value.trim());
+  const resultMessage = document.getElementById("resultMessage");
+  
+  if (userAnswer === currentWord.romaji) {
+    resultMessage.textContent = "Correct! 🎉";
+    resultMessage.style.color = "green";
+    document.getElementById("correctImage").classList.add("show");
+    setTimeout(getNewWord, 1000); // Move to next word automatically after 1 second
+  } else {
+    resultMessage.textContent = `Incorrect. The correct answer is "${currentWord.romaji}".`;
+    resultMessage.style.color = "red";
+    document.getElementById("nextButton").style.display = "block";
+    document.getElementById("romajiInput").focus(); // Refocus on the input field
+  }
+}
+
+// Add an event listener for Enter key submission and next question
+document.getElementById("romajiInput").addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    if (document.getElementById("nextButton").style.display === "block") {
+      getNewWord(); // Go to the next question if "Next Question" is visible
+    } else {
+      checkAnswer();
+    }
+  }
+});
+
+// Initialize with the first word and focus on the input field
+window.onload = function() {
+  getNewWord();
+  document.getElementById("romajiInput").focus();
+};
+</script>
+
+</body>
+</html>
