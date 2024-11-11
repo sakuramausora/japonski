@@ -15,6 +15,7 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            position: relative;
         }
         .container {
             max-width: 600px;
@@ -89,6 +90,19 @@
             font-weight: bold;
             color: #333;
         }
+        /* Pop-out image styling */
+        .pop-out-image {
+            position: fixed;
+            left: -300px;
+            bottom: 20px;
+            width: 200px;
+            transition: transform 0.5s ease;
+            transform: translateX(-100%);
+            z-index: 10;
+        }
+        .pop-out-image.show {
+            transform: translateX(300px);
+        }
     </style>
 </head>
 <body>
@@ -116,6 +130,10 @@
         <div class="score" id="score">Score: 0</div>
         <button id="nextButton" onclick="loadSentence()" style="display: none;">Next Question</button>
     </div>
+
+    <!-- Pop-out Image -->
+    <img src="https://raw.githubusercontent.com/sakuramausora/japonski/refs/heads/main/Emu.webp" alt="Character Pop-out" class="pop-out-image" id="popOutImage">
+
 
     <script>
         const verbs = {
@@ -261,7 +279,11 @@
                 document.getElementById("feedback").classList.remove("incorrect");
                 score++;
                 updateProgressBar();
-                loadSentence(); // Load the next question if correct
+                showPopOutImage(); // Show the pop-out image
+                setTimeout(() => {
+                    hidePopOutImage();
+                    loadSentence();
+                }, 1500); // Delay before loading the next question
             } else {
                 document.getElementById("feedback").textContent = `Incorrect. The correct answer was: ${correctAnswer}`;
                 document.getElementById("feedback").classList.add("incorrect");
@@ -278,9 +300,18 @@
             progressBar.style.width = `${progressWidth}%`;
         }
 
+        function showPopOutImage() {
+            const popOutImage = document.getElementById("popOutImage");
+            popOutImage.classList.add("show");
+        }
+
+        function hidePopOutImage() {
+            const popOutImage = document.getElementById("popOutImage");
+            popOutImage.classList.remove("show");
+        }
+
         function handleKeyPress(event) {
             if (event.key === "Enter") {
-                // If the "Next Question" button is visible, load the next sentence
                 if (document.getElementById("nextButton").style.display === "inline") {
                     loadSentence();
                 } else {
