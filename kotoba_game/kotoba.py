@@ -530,6 +530,7 @@ def undo_last_placement(board):
 def new_game():
     global score, detected_words, used_tiles, scroll_offset, dragged_tile, dragged_tile_pos
     score = 0
+    score_history=[0]
     detected_words = set()
     used_tiles = set()
     scroll_offset = 0
