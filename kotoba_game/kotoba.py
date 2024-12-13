@@ -81,6 +81,7 @@ selected_index = 0  # Default starting index for the sidebar character selection
 sidebar_dragging = False
 sidebar_drag_start_y = 0
 used_tiles = set()  # Keep track of used tiles
+initial_tile_positions = []
 
 def generate_board():
     global initial_tile_positions  # Keeps track of pre-placed tiles
@@ -397,16 +398,14 @@ def is_valid(row, col, board):
             
     return False  # No adjacent letter found
 
-def update_score(board, new_words):
-    global score, score_history, word_list, user_words
-
-    
+def update_score(new_words):
+    global score, score_history, word_list, used_words
 
     for word in new_words:
-        if word in word_list and word not in user_words:  # Ensure the word is not already scored in this move
+        if word in word_list and word not in used_words:  # Ensure the word is not already scored in this move
             if len(word) > 2:  # Only count words longer than 2 characters
                 score += 1  # Increment the score
-            user_words.append(word)  # Add to the list of user words            
+            used_words.append(word)  # Add to the list of user words
     # Push the updated score onto the history stack
     score_history.append(score)
 
@@ -435,13 +434,13 @@ def draw_undo():
     return undo_button
 
 
-user_words = []  # Words created by the user
+used_words = []  # Words created by the user
 
 def display_word_list():
     global scroll_offset
     running = True
-    global user_words
-    user_words = list(set(user_words))
+    global used_words
+    used_words = list(set(used_words))
 
     while running:
         screen.fill(NAVY)
@@ -452,7 +451,7 @@ def display_word_list():
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         # Render each word and check if the mouse hovers over it
-        for word in user_words:
+        for word in used_words:
             word_surface = FONT.render(word, True, WHITE)
             word_rect = word_surface.get_rect(topleft=(50, y_offset))
             word_rects.append((word_rect, word))  # Store the rect and word
@@ -536,8 +535,8 @@ def new_game():
     scroll_offset = 0
     dragged_tile = None
     dragged_tile_pos = (0, 0)
-    global user_words
-    user_words=[]  
+    global used_words
+    used_words=[]
     game_loop()
 
 def end_game():
