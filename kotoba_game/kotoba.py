@@ -184,7 +184,7 @@ def handle_sidebar_click(mouse_x, mouse_y):
     # Calculate the flat index from row and column
     index = row * SIDEBAR_COLUMNS + col
 
-    if 0 <= index < len(hiragana_list):
+    if index < len(hiragana_list):
         dragged_tile = hiragana_list[index]
         if dragged_tile not in used_tiles:  # Only allow unused tiles
             dragged_tile_pos = (mouse_x, mouse_y)
@@ -200,13 +200,12 @@ def handle_tile_drag(pos, board):
     global dragged_tile, dragged_tile_pos, sidebar_dragging
     col, row = pos
     if dragged_tile:
-       
             dragged_tile_pos = (col, row)
 
 def draw_board(board):
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
-            rect = pygame.Rect(col * TILE_SIZE +BOARD_OFFSET_X, BOARD_OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            rect = pygame.Rect(col * TILE_SIZE + BOARD_OFFSET_X, BOARD_OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, WHITE, rect)  # Grid cells in white
             pygame.draw.rect(screen, GRID_COLOR, rect, 2)
 
@@ -389,8 +388,6 @@ def is_valid(row, col, board):
         
         # Check if the adjacent tile is within the grid bounds
         if 0 <= adj_row < GRID_SIZE and 0 <= adj_col < GRID_SIZE:
-            
-
             # Check if the adjacent tile is a letter
             if board[adj_row][adj_col] in hiragana_list:
                 
@@ -629,7 +626,7 @@ def game_loop():
                                     used_tiles.add(dragged_tile)  # Mark the tile as used only after valid placement
                                     unique_new_words = [word for word in new_words if word in word_list]
 
-                                    update_score(board, unique_new_words)
+                                    update_score(unique_new_words)
                                     placed_tiles.append((row, col, dragged_tile))  # Track placement for undo
                                 else:
                                     board[row][col] = None  # Revert if invalid
@@ -657,7 +654,7 @@ def game_loop():
 
         # Update display
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(120)
 
     pygame.quit()
 
