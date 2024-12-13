@@ -81,6 +81,7 @@ selected_index = 0  # Default starting index for the sidebar character selection
 sidebar_dragging = False
 sidebar_drag_start_y = 0
 used_tiles = set()  # Keep track of used tiles
+initial_tile_positions = []
 
 def generate_board():
     global initial_tile_positions  # Keeps track of pre-placed tiles
@@ -183,7 +184,7 @@ def handle_sidebar_click(mouse_x, mouse_y):
     # Calculate the flat index from row and column
     index = row * SIDEBAR_COLUMNS + col
 
-    if 0 <= index < len(hiragana_list):
+    if index < len(hiragana_list):
         dragged_tile = hiragana_list[index]
         if dragged_tile not in used_tiles:  # Only allow unused tiles
             dragged_tile_pos = (mouse_x, mouse_y)
@@ -199,13 +200,12 @@ def handle_tile_drag(pos, board):
     global dragged_tile, dragged_tile_pos, sidebar_dragging
     col, row = pos
     if dragged_tile:
-       
             dragged_tile_pos = (col, row)
 
 def draw_board(board):
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
-            rect = pygame.Rect(col * TILE_SIZE +BOARD_OFFSET_X, BOARD_OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            rect = pygame.Rect(col * TILE_SIZE + BOARD_OFFSET_X, BOARD_OFFSET_Y + row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, WHITE, rect)  # Grid cells in white
             pygame.draw.rect(screen, GRID_COLOR, rect, 2)
 
@@ -388,8 +388,6 @@ def is_valid(row, col, board):
         
         # Check if the adjacent tile is within the grid bounds
         if 0 <= adj_row < GRID_SIZE and 0 <= adj_col < GRID_SIZE:
-            
-
             # Check if the adjacent tile is a letter
             if board[adj_row][adj_col] in hiragana_list:
                 
@@ -397,16 +395,14 @@ def is_valid(row, col, board):
             
     return False  # No adjacent letter found
 
-def update_score(board, new_words):
-    global score, score_history, word_list, user_words
-
-    
+def update_score(new_words):
+    global score, score_history, word_list, used_words
 
     for word in new_words:
-        if word in word_list and word not in user_words:  # Ensure the word is not already scored in this move
+        if word in word_list and word not in used_words:  # Ensure the word is not already scored in this move
             if len(word) > 2:  # Only count words longer than 2 characters
                 score += 1  # Increment the score
-            user_words.append(word)  # Add to the list of user words            
+            used_words.append(word)  # Add to the list of user words
     # Push the updated score onto the history stack
     score_history.append(score)
 
@@ -435,13 +431,13 @@ def draw_undo():
     return undo_button
 
 
-user_words = []  # Words created by the user
+used_words = []  # Words created by the user
 
 def display_word_list():
     global scroll_offset
     running = True
-    global user_words
-    user_words = list(set(user_words))
+    global used_words
+    used_words = list(set(used_words))
 
     while running:
         screen.fill(NAVY)
@@ -452,7 +448,7 @@ def display_word_list():
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         # Render each word and check if the mouse hovers over it
-        for word in user_words:
+        for word in used_words:
             word_surface = FONT.render(word, True, WHITE)
             word_rect = word_surface.get_rect(topleft=(50, y_offset))
             word_rects.append((word_rect, word))  # Store the rect and word
@@ -536,8 +532,8 @@ def new_game():
     scroll_offset = 0
     dragged_tile = None
     dragged_tile_pos = (0, 0)
-    global user_words
-    user_words=[]  
+    global used_words
+    used_words=[]
     game_loop()
 
 def end_game():
@@ -630,7 +626,7 @@ def game_loop():
                                     used_tiles.add(dragged_tile)  # Mark the tile as used only after valid placement
                                     unique_new_words = [word for word in new_words if word in word_list]
 
-                                    update_score(board, unique_new_words)
+                                    update_score(unique_new_words)
                                     placed_tiles.append((row, col, dragged_tile))  # Track placement for undo
                                 else:
                                     board[row][col] = None  # Revert if invalid
@@ -658,7 +654,7 @@ def game_loop():
 
         # Update display
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(120)
 
     pygame.quit()
 
