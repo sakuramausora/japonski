@@ -2,7 +2,7 @@
 """
 Created on Tue Dec  3 12:36:23 2024
 
-@author: wacio
+@author: sakuramau
 """
 
 import pygame
@@ -31,8 +31,8 @@ FONT = pygame.font.Font("NotoSansJP-Black.ttf", 36)
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GRID_COLOR = (0, 0, 0)  
-TEXT_COLOR = (0, 0, 0)  
+GRID_COLOR = (0, 0, 0)
+TEXT_COLOR = (0, 0, 0)
 GREEN = (100, 255, 100)
 YELLOW = (255, 255, 100)
 BLUE = (173, 216, 230)
@@ -57,9 +57,9 @@ hiragana_list = [
     "な", "に", "ぬ", "ね", "の",
     "は", "ひ", "ふ", "へ", "ほ",
     "ま", "み", "む", "め", "も",
-    
+
     "ら", "り", "る", "れ", "ろ",
-    
+
     "が", "ぎ", "ぐ", "げ", "ご",
     "ざ", "じ", "ず", "ぜ", "ぞ",
     "だ", "ぢ", "づ", "で", "ど",
@@ -82,6 +82,7 @@ sidebar_dragging = False
 sidebar_drag_start_y = 0
 used_tiles = set()  # Keep track of used tiles
 initial_tile_positions = []
+
 
 def generate_board():
     global initial_tile_positions  # Keeps track of pre-placed tiles
@@ -113,28 +114,10 @@ def generate_board():
     initialize_detected_words(board)
 
     return board
-  
-    # Place random tiles on the board
-    for _ in range(15):
-        row = random.randint(0, GRID_SIZE - 1)
-        col = random.randint(0, GRID_SIZE - 1)
-        board[row][col] = random.choice(hiragana_list)
-        initial_tile_positions.append((row, col))  # Store the positions of initially placed tiles
-    
-    # Place unusable tiles
-    num_unusable_tiles = 10  # Adjust the number of unusable tiles as needed
-    for _ in range(num_unusable_tiles):
-        while True:
-            row = random.randint(0, GRID_SIZE - 1)
-            col = random.randint(0, GRID_SIZE - 1)
-            if board[row][col] is None:  # Only place on empty cells
-                board[row][col] = "#"  # Use "#" to mark unusable tiles
-                break
-    
-    return board
 
 SIDEBAR_COLUMNS = 5
 SIDEBAR_WIDTH = SIDEBAR_COLUMNS * TILE_SIZE
+
 
 def draw_sidebar():
     global scroll_offset, selected_index
@@ -173,6 +156,7 @@ def draw_sidebar():
             char_rect.y + (TILE_SIZE - char_surface.get_height()) // 2
         ))
 
+
 def handle_sidebar_click(mouse_x, mouse_y):
     global dragged_tile, dragged_tile_pos, selected_index, sidebar_dragging, sidebar_drag_start_y, used_tiles
 
@@ -195,12 +179,14 @@ def handle_sidebar_click(mouse_x, mouse_y):
             dragged_tile = None
             sidebar_dragging = False
 
+
 # Function to handle dragging and placing tiles
 def handle_tile_drag(pos, board):
     global dragged_tile, dragged_tile_pos, sidebar_dragging
     col, row = pos
     if dragged_tile:
-            dragged_tile_pos = (col, row)
+        dragged_tile_pos = (col, row)
+
 
 def draw_board(board):
     for row in range(GRID_SIZE):
@@ -211,7 +197,7 @@ def draw_board(board):
 
             if board[row][col]:
                 char = board[row][col]
-                
+
                 if char == "#":  # Unusable tile
                     pygame.draw.rect(screen, (50, 50, 50), rect)  # Dark gray for unusable tiles
                 else:
@@ -235,12 +221,13 @@ def draw_board(board):
                     pygame.draw.rect(screen, GRID_COLOR, rect, 2)  # Border
                     screen.blit(text, text_rect)
 
+
 # Function to draw the dragged tile while dragging
 def draw_dragged_tile():
     if dragged_tile:
         # Determine the color for the dragged tile based on the index in the hiragana_list
         tile_index = hiragana_list.index(dragged_tile)
-        
+
         # Assign colors based on index (green, yellow, or blue)
         if tile_index % 3 == 0:
             background_color = GREEN
@@ -263,6 +250,8 @@ def draw_dragged_tile():
 
 # Global set to store already detected words
 detected_words = set()
+
+
 def initialize_detected_words(board):
     global detected_words
     detected_words = set()
@@ -273,12 +262,11 @@ def initialize_detected_words(board):
         else:
             return [board[r][fixed] for r in range(start, end + 1) if board[r][fixed] is not None]
 
-
     def generate_substrings(word):
         substrings = []
         # Filter out None values from the word
         word = [tile for tile in word if tile is not None]
-        
+
         for i in range(len(word)):
             for j in range(i + 2, len(word) + 1):  # Substrings of length ≥ 2
                 substrings.append("".join(word[i:j]))
@@ -376,24 +364,23 @@ def collect_new_words(row, col, board):
     return list(set(new_words))
 
 
-
 # Function to check if the square is adjacent to a letter (other placed tile with letters)
 def is_valid(row, col, board):
     # Define the directions to check for adjacent tiles (left, right, up, down)
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    
+
     # Iterate over the directions to check the adjacent tiles
     for dr, dc in directions:
         adj_row, adj_col = row + dr, col + dc
-        
+
         # Check if the adjacent tile is within the grid bounds
         if 0 <= adj_row < GRID_SIZE and 0 <= adj_col < GRID_SIZE:
             # Check if the adjacent tile is a letter
             if board[adj_row][adj_col] in hiragana_list:
-                
                 return True  # Add the adjacent tile's character to form a word
-            
+
     return False  # No adjacent letter found
+
 
 def update_score(new_words):
     global score, score_history, word_list, used_words
@@ -406,15 +393,14 @@ def update_score(new_words):
     # Push the updated score onto the history stack
     score_history.append(score)
 
-   
-                       
+
 def draw_score():
     score_surface = FONT.render(f"Score: {score}", True, WHITE)
     # Center horizontally and offset vertically by 10 pixels
     score_rect = score_surface.get_rect(center=(WIDTH // 2, 30))
     screen.blit(score_surface, score_rect)
 
-        
+
 def draw_button(x, y, width, height, text, color, text_color, callback):
     pygame.draw.rect(screen, color, (x, y, width, height))
     pygame.draw.rect(screen, BLACK, (x, y, width, height), 2)
@@ -423,15 +409,17 @@ def draw_button(x, y, width, height, text, color, text_color, callback):
     screen.blit(button_text, (x + (width - button_text.get_width()) // 2, y + (height - button_text.get_height()) // 2))
     return pygame.Rect(x, y, width, height)
 
+
 def draw_undo():
     undo_button = pygame.Rect(525, HEIGHT - 50, 100, 37)
-    pygame.draw.rect(screen, (200,200,200), undo_button)
-    undo_text = FONT.render("Undo", True, BLACK)    
-    screen.blit(undo_text, (525, HEIGHT -60))
+    pygame.draw.rect(screen, (200, 200, 200), undo_button)
+    undo_text = FONT.render("Undo", True, BLACK)
+    screen.blit(undo_text, (525, HEIGHT - 60))
     return undo_button
 
 
 used_words = []  # Words created by the user
+
 
 def display_word_list():
     global scroll_offset
@@ -469,7 +457,8 @@ def display_word_list():
 
         # Draw buttons for closing or starting a new game
         close_button = draw_button(WIDTH // 2 - 50, HEIGHT - 70, 100, 40, "Close", RED, WHITE, lambda: None)
-        new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "New Game", GREEN, WHITE, lambda: None)
+        new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "New Game", GREEN, WHITE,
+                                      lambda: None)
 
         # Event handling
         for event in pygame.event.get():
@@ -503,11 +492,14 @@ def display_word_list():
 
         pygame.display.flip()
 
+
 placed_tiles = []  # Stack to track placed tiles
+
 
 def return_tile_to_sidebar(tile):
     if tile in used_tiles:
         used_tiles.remove(tile)  # Mark the tile as unused
+
 
 def undo_last_placement(board):
     global score, placed_tiles, score_history
@@ -522,30 +514,33 @@ def undo_last_placement(board):
         if len(score_history) > 1:  # Ensure there's a previous score to revert to
             score_history.pop()  # Remove the current score
             score = score_history[-1]  # Set score to the previous value
-        
+
+
 def new_game():
-    global score, detected_words, used_tiles, scroll_offset, dragged_tile, dragged_tile_pos
+    global score, score_history, detected_words, used_tiles, scroll_offset, dragged_tile, dragged_tile_pos, placed_tiles
+    placed_tiles=[]
     score = 0
-    score_history=[0]
+    score_history = [0]
     detected_words = set()
     used_tiles = set()
     scroll_offset = 0
     dragged_tile = None
     dragged_tile_pos = (0, 0)
     global used_words
-    used_words=[]
+    used_words = []
     game_loop()
+
 
 def end_game():
     global running
     screen.fill(BLACK)
     final_score_text = FONT.render("Game complete!", True, WHITE)
     screen.blit(final_score_text, (WIDTH // 2 - final_score_text.get_width() // 2, HEIGHT // 2 - 50))
-    
+
     word_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 50, 150, 50, "Show Words", ORANGE, WHITE, lambda: None)
     close_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "Quit", RED, WHITE, lambda: None)
     new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 190, 150, 50, "New Game", GREEN, WHITE, lambda: None)
-   
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -560,13 +555,14 @@ def end_game():
                 elif new_game_button.collidepoint(event.pos):
                     running = False
                     new_game()
-        
+
         pygame.display.flip()
+
 
 def game_loop():
     global dragged_tile, dragged_tile_pos, sidebar_dragging, sidebar_drag_start_y, scroll_offset, selected_index, placed_tiles, score
-    min_scroll_offset = 0  
-    num_rows = (len(hiragana_list) + SIDEBAR_COLUMNS - 1) // SIDEBAR_COLUMNS  
+    min_scroll_offset = 0
+    num_rows = (len(hiragana_list) + SIDEBAR_COLUMNS - 1) // SIDEBAR_COLUMNS
     max_scroll_offset = -(num_rows * TILE_SIZE - HEIGHT)
 
     # Initialize the board
@@ -576,7 +572,7 @@ def game_loop():
     running = True
     while running:
         screen.fill(BLACK)
-        
+
         # Draw components
         draw_sidebar()
         draw_board(board)
@@ -600,7 +596,7 @@ def game_loop():
                     # Check if we clicked on the Undo
                     if undo_button.collidepoint(event.pos):
                         undo_last_placement(board)
-                    
+
 
                     # Check if we clicked on a tile in the sidebar
                     elif mouse_x < SIDEBAR_WIDTH:
@@ -631,7 +627,6 @@ def game_loop():
                                 else:
                                     board[row][col] = None  # Revert if invalid
 
-
                         # Reset dragged tile
                         dragged_tile = None
 
@@ -648,17 +643,15 @@ def game_loop():
                     running = False  # Exit game when Escape is pressed
                 elif event.key == pygame.K_z:
                     undo_last_placement(board)
-            
-        if score>=20:
-           end_game() 
 
-        # Update display
+        if score >= 1:
+            end_game()
+
+            # Update display
         pygame.display.flip()
         clock.tick(120)
 
     pygame.quit()
-
-
 
 
 if __name__ == "__main__":
