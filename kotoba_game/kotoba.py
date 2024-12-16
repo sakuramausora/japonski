@@ -181,7 +181,7 @@ def handle_sidebar_click(mouse_x, mouse_y):
 
 
 # Function to handle dragging and placing tiles
-def handle_tile_drag(pos, board):
+def handle_tile_drag(pos):
     global dragged_tile, dragged_tile_pos, sidebar_dragging
     col, row = pos
     if dragged_tile:
@@ -401,7 +401,7 @@ def draw_score():
     screen.blit(score_surface, score_rect)
 
 
-def draw_button(x, y, width, height, text, color, text_color, callback):
+def draw_button(x, y, width, height, text, color, text_color):
     pygame.draw.rect(screen, color, (x, y, width, height))
     pygame.draw.rect(screen, BLACK, (x, y, width, height), 2)
     button_font = pygame.font.Font(None, 24)
@@ -456,9 +456,8 @@ def display_word_list():
             y_offset += 40
 
         # Draw buttons for closing or starting a new game
-        close_button = draw_button(WIDTH // 2 - 50, HEIGHT - 70, 100, 40, "Close", RED, WHITE, lambda: None)
-        new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "New Game", GREEN, WHITE,
-                                      lambda: None)
+        close_button = draw_button(WIDTH // 2 - 50, HEIGHT - 70, 100, 40, "Close", RED, WHITE)
+        new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "New Game", GREEN, WHITE)
 
         # Event handling
         for event in pygame.event.get():
@@ -537,9 +536,9 @@ def end_game():
     final_score_text = FONT.render("Game complete!", True, WHITE)
     screen.blit(final_score_text, (WIDTH // 2 - final_score_text.get_width() // 2, HEIGHT // 2 - 50))
 
-    word_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 50, 150, 50, "Show Words", ORANGE, WHITE, lambda: None)
-    close_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "Quit", RED, WHITE, lambda: None)
-    new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 190, 150, 50, "New Game", GREEN, WHITE, lambda: None)
+    word_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 50, 150, 50, "Show Words", ORANGE, WHITE)
+    close_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 120, 150, 50, "Quit", RED, WHITE)
+    new_game_button = draw_button(WIDTH // 2 - 75, HEIGHT // 2 + 190, 150, 50, "New Game", GREEN, WHITE)
 
     while True:
         for event in pygame.event.get():
@@ -632,7 +631,7 @@ def game_loop():
 
             elif event.type == pygame.MOUSEMOTION:
                 if dragged_tile:
-                    handle_tile_drag(event.pos, board)
+                    handle_tile_drag(event.pos)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:  # Move sidebar down
