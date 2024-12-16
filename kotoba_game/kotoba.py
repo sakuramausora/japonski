@@ -310,7 +310,7 @@ def initialize_detected_words(board):
 
 
 def collect_new_words(row, col, board):
-    new_words = []
+    current_words = set()  # Track words formed in this move only
 
     # Helper function to extract a contiguous sequence of tiles
     def extract_word(start, end, fixed, is_row):
@@ -340,9 +340,9 @@ def collect_new_words(row, col, board):
         end_col += 1
 
     # Process horizontal word
-    if end_col - start_col + 1 >= 2:  # Only consider words of length ≥ 2
+    if end_col - start_col + 1 >= 2:
         horizontal_word = extract_word(start_col, end_col, row, is_row=True)
-        new_words.extend(generate_substrings(horizontal_word))
+        current_words.update(generate_substrings(horizontal_word))
 
     # Vertical word detection
     start_row = row
@@ -356,12 +356,14 @@ def collect_new_words(row, col, board):
         end_row += 1
 
     # Process vertical word
-    if end_row - start_row + 1 >= 2:  # Only consider words of length ≥ 2
+    if end_row - start_row + 1 >= 2:
         vertical_word = extract_word(start_row, end_row, col, is_row=False)
-        new_words.extend(generate_substrings(vertical_word))
+        current_words.update(generate_substrings(vertical_word))
 
-    # Filter out duplicates
-    return list(set(new_words))
+    # Only return words that weren't previously detected
+    new_words = [word for word in current_words if word not in detected_words]
+
+    return new_words
 
 
 # Function to check if the square is adjacent to a letter (other placed tile with letters)
@@ -607,25 +609,22 @@ def game_loop():
                         mouse_x, mouse_y = event.pos
                         col = (mouse_x - BOARD_OFFSET_X) // TILE_SIZE
                         row = (mouse_y - BOARD_OFFSET_Y) // TILE_SIZE
-
                         # Check if the tile is placed within the grid bounds
                         if 0 <= col < GRID_SIZE and 0 <= row < GRID_SIZE:
-                            # If the spot is empty and valid, check new words
-                            if board[row][col] is None:  # Only check the board for conflicts
+                            if board[row][col] is None:
                                 board[row][col] = dragged_tile
                                 new_words = collect_new_words(row, col, board)
 
-                                valid_placement = any(word in word_list for word in new_words)
+                                # Check if placement creates at least one new valid word
+                                valid_placement = any(word in word_list and word not in detected_words for word in new_words)
 
                                 if valid_placement:
-                                    used_tiles.add(dragged_tile)  # Mark the tile as used only after valid placement
-                                    unique_new_words = [word for word in new_words if word in word_list]
-
-                                    update_score(unique_new_words)
-                                    placed_tiles.append((row, col, dragged_tile))  # Track placement for undo
+                                    used_tiles.add(dragged_tile)
+                                    detected_words.update(new_words)  # Add new words to detected set
+                                    update_score(new_words)
+                                    placed_tiles.append((row, col, dragged_tile))
                                 else:
-                                    board[row][col] = None  # Revert if invalid
-
+                                    board[row][col] = None  # Invalid placement, revert
                         # Reset dragged tile
                         dragged_tile = None
 
@@ -643,7 +642,7 @@ def game_loop():
                 elif event.key == pygame.K_z:
                     undo_last_placement(board)
 
-        if score >= 1:
+        if score >= 20:
             end_game()
 
             # Update display
