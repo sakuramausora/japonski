@@ -503,13 +503,17 @@ def return_tile_to_sidebar(tile):
 
 
 def undo_last_placement(board):
-    global score, placed_tiles, score_history
+    global score, placed_tiles, score_history, detected_words
 
     if placed_tiles:
         # Undo the last placement
         row, col, tile = placed_tiles.pop()
         board[row][col] = None  # Clear the board cell
         return_tile_to_sidebar(tile)  # Return the tile to the sidebar
+
+        # Reset detected words and reinitialize from current board state
+        detected_words.clear()
+        initialize_detected_words(board)
 
         # Revert score to the previous value in score_history
         if len(score_history) > 1:  # Ensure there's a previous score to revert to
@@ -616,7 +620,7 @@ def game_loop():
                                 new_words = collect_new_words(row, col, board)
 
                                 # Check if placement creates at least one new valid word
-                                valid_placement = any(word in word_list and word not in detected_words for word in new_words)
+                                valid_placement = any(word in word_list for word in new_words)
 
                                 if valid_placement:
                                     used_tiles.add(dragged_tile)
