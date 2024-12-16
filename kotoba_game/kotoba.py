@@ -39,6 +39,7 @@ BLUE = (173, 216, 230)
 ORANGE = (255, 165, 0)
 RED = (255, 0, 0)
 NAVY = (0, 0, 128)
+BRIGHT_YELLOW = (255, 255, 0)
 
 # Set up the screen
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -564,6 +565,45 @@ def end_game():
         pygame.display.flip()
 
 
+def flash(new_words, board):
+    for word in new_words:
+        if word in word_list:
+            original_surface = screen.copy()
+            flash_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+            # Find horizontal words
+            for row in range(GRID_SIZE):
+                for col in range(GRID_SIZE - len(word) + 1):
+                    # Filter out None values and join characters
+                    board_word = ''.join(
+                        str(board[row][i]) for i in range(col, col + len(word)) if board[row][i] is not None)
+                    if board_word == word:
+                        for i in range(len(word)):
+                            rect = pygame.Rect((col + i) * TILE_SIZE + BOARD_OFFSET_X,
+                                               BOARD_OFFSET_Y + row * TILE_SIZE,
+                                               TILE_SIZE, TILE_SIZE)
+                            pygame.draw.rect(flash_surface, (255, 255, 0, 128), rect)
+
+            # Find vertical words
+            for col in range(GRID_SIZE):
+                for row in range(GRID_SIZE - len(word) + 1):
+                    # Filter out None values and join characters
+                    board_word = ''.join(
+                        str(board[i][col]) for i in range(row, row + len(word)) if board[i][col] is not None)
+                    if board_word == word:
+                        for i in range(len(word)):
+                            rect = pygame.Rect(col * TILE_SIZE + BOARD_OFFSET_X,
+                                               BOARD_OFFSET_Y + (row + i) * TILE_SIZE,
+                                               TILE_SIZE, TILE_SIZE)
+                            pygame.draw.rect(flash_surface, (255, 255, 0, 128), rect)
+
+            screen.blit(flash_surface, (0, 0))
+            pygame.display.flip()
+            pygame.time.wait(1000)
+            screen.blit(original_surface, (0, 0))
+            pygame.display.flip()
+
+
 def game_loop():
     global dragged_tile, dragged_tile_pos, sidebar_dragging, sidebar_drag_start_y, scroll_offset, selected_index, placed_tiles, score
     min_scroll_offset = 0
@@ -621,12 +661,17 @@ def game_loop():
 
                                 # Check if placement creates at least one new valid word
                                 valid_placement = any(word in word_list for word in new_words)
-
                                 if valid_placement:
                                     used_tiles.add(dragged_tile)
                                     detected_words.update(new_words)  # Add new words to detected set
                                     update_score(new_words)
                                     placed_tiles.append((row, col, dragged_tile))
+                                    screen.fill(BLACK)
+                                    draw_sidebar()
+                                    draw_board(board)
+                                    draw_score()
+                                    pygame.display.flip()
+                                    flash(new_words, board)
                                 else:
                                     board[row][col] = None  # Invalid placement, revert
                         # Reset dragged tile
