@@ -428,7 +428,7 @@ def display_word_list():
     global scroll_offset
     running = True
     global used_words
-    used_words = list(set(used_words))
+    used_words = sorted(list(set(used_words)))  # Sort alphabetically and remove duplicates
 
     while running:
         screen.fill(NAVY)
