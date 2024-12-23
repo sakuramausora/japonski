@@ -231,82 +231,6 @@ def handle_tile_hover(row, col, board):
 
         screen.blit(block_surface, (block_x, block_y))
         pygame.draw.rect(screen, BLACK, (block_x, block_y, block_width, block_height), 2)
-def collect_new_words(row, col, board):
-    current_words = set()  # Track words formed in this move only
-
-    # Helper function to extract a contiguous sequence of tiles
-    def extract_word(start, end, fixed, is_row):
-        if is_row:
-            return [board[fixed][c] for c in range(start, end + 1) if board[fixed][c] is not None]
-        else:
-            return [board[r][fixed] for r in range(start, end + 1) if board[r][fixed] is not None]
-
-    # Helper function to generate all substrings of length ≥ 2
-    def generate_substrings(word):
-        substrings = []
-        word = [tile for tile in word if tile is not None]  # Filter out None values
-        for i in range(len(word)):
-            for j in range(i + 2, len(word) + 1):  # Substrings of length ≥ 2
-                substrings.append("".join(word[i:j]))
-        return substrings
-
-    # Horizontal word detection
-    start_col = col
-    end_col = col
-
-    # Move left to find the start of the horizontal word
-    while start_col > 0 and board[row][start_col - 1] in kanji_list:
-        start_col -= 1
-    # Move right to find the end of the horizontal word
-    while end_col < GRID_SIZE - 1 and board[row][end_col + 1] in kanji_list:
-        end_col += 1
-
-    # Process horizontal word
-    if end_col - start_col + 1 >= 2:
-        horizontal_word = extract_word(start_col, end_col, row, is_row=True)
-        current_words.update(generate_substrings(horizontal_word))
-
-    # Vertical word detection
-    start_row = row
-    end_row = row
-
-    # Move up to find the start of the vertical word
-    while start_row > 0 and board[start_row - 1][col] in kanji_list:
-        start_row -= 1
-    # Move down to find the end of the vertical word
-    while end_row < GRID_SIZE - 1 and board[end_row + 1][col] in kanji_list:
-        end_row += 1
-
-    # Process vertical word
-    if end_row - start_row + 1 >= 2:
-        vertical_word = extract_word(start_row, end_row, col, is_row=False)
-        current_words.update(generate_substrings(vertical_word))
-
-    # Only return words that weren't previously detected
-    new_words = [word for word in current_words]
-
-    return new_words
-
-# Function to check if the square is adjacent to a letter (other placed tile with letters)
-def is_valid(row, col, board):
-    # Define the directions to check for adjacent tiles (left, right, up, down)
-    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-
-    # Iterate over the directions to check the adjacent tiles
-    for dr, dc in directions:
-        adj_row, adj_col = row + dr, col + dc
-
-        # Check if the adjacent tile is within the grid bounds
-        if 0 <= adj_row < GRID_SIZE and 0 <= adj_col < GRID_SIZE:
-            # Check if the adjacent tile is a letter
-            if board[adj_row][adj_col] in kanji_list:
-                return True  # Add the adjacent tile's character to form a word
-
-    return False  # No adjacent letter found
-
-
-
-
 
 
 def draw_score():
@@ -361,49 +285,24 @@ def end_game():
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
-
-                # Handle clicks on displayed words
-                for word, rect in displayed_word_rects:
-                    if rect.collidepoint(mouse_x, mouse_y):
-                        webbrowser.open(f"https://jisho.org/search/{word}")
-
-                # Handle buttons
-                if close_button.collidepoint(mouse_x, mouse_y):  # Quit button
+                if new_game_button.collidepoint(mouse_x, mouse_y):
+                    new_game()
+                elif close_button.collidepoint(mouse_x, mouse_y):
+                    running = False
                     pygame.quit()
                     sys.exit()
-                elif new_game_button.collidepoint(mouse_x, mouse_y):  # New Game button
-                    new_game()
+
+                else:
+                    for word, rect in displayed_word_rects:
+                        if rect.collidepoint(mouse_x, mouse_y):
+                            if hovered_word_data_cache.get(word, [""])[
+                                1] == "//no dictionary match - click on word for google search//":
+                                webbrowser.open(f"https://www.google.com/search?q={word}&hl=ja&lr=lang_ja")
+                            else:
+                                webbrowser.open(f"https://jisho.org/search/{word}")
 
         # Update the display
         pygame.display.flip()
-
-def get_word_info(word):
-    global hovered_word_data_cache  # Ensure it can access the cache
-    try:
-        # Check cache first
-        if word in hovered_word_data_cache:
-            return hovered_word_data_cache[word]
-
-        # Fetch from Jisho API if not cached
-        response = session.get(f"https://jisho.org/api/v1/search/words?keyword={word}")
-        if response.status_code == 200:
-            data = response.json()
-            if data['data']:
-                for word_data in data['data']:
-                    for japanese_entry in word_data.get("japanese", []):
-                        if japanese_entry.get("word") == word or japanese_entry.get("reading") == word:
-                            readings = [japanese_entry.get("reading", "")]
-                            meanings = word_data['senses'][0]['english_definitions']
-                            hovered_word_data_cache[word] = (readings, ", ".join(meanings))  # Cache the result
-                            return readings, ", ".join(meanings)
-
-                return [""], "//partial match - click on word to see meaning//"
-            else:
-                return [""], "//no dictionary match - click on word for google search//"
-        else:
-            return [""], ""
-    except Exception as e:
-        return ["Error"], f"Error: {str(e)}"
 
 
 # Global list to store displayed words
@@ -412,7 +311,10 @@ displayed_words = []
 def flash(new_words, board):
     global selected_tiles, score
 
-    # Store the original screen surface
+    # Clear selected tiles to remove the red frame
+    selected_tiles = []
+
+    # Cache the original screen once
     original_surface = screen.copy()
 
     for word in new_words:
@@ -420,15 +322,13 @@ def flash(new_words, board):
             # Identify the positions of the tiles that form the word
             word_positions = []
 
-            # Horizontal search
+            # Search for the word horizontally or vertically
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE - len(word) + 1):
                     if ''.join(board[row][col:col + len(word)]) == word:
                         word_positions = [(row, col + i) for i in range(len(word))]
                         break
-
-            # Vertical search
-            if not word_positions:
+            if not word_positions:  # Vertical search
                 for col in range(GRID_SIZE):
                     for row in range(GRID_SIZE - len(word) + 1):
                         if ''.join(board[row + i][col] for i in range(len(word))) == word:
@@ -438,49 +338,107 @@ def flash(new_words, board):
             if word_positions:
                 # Create a translucent surface for flashing
                 flash_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                readings, meaning = get_word_info(word)
+                flash_surface.fill((0, 0, 0, 0))  # Transparent base
 
-                # Highlight the identified tiles
                 for (row, col) in word_positions:
-                    rect = pygame.Rect(col * TILE_SIZE + BOARD_OFFSET_X,
-                                       BOARD_OFFSET_Y + row * TILE_SIZE,
-                                       TILE_SIZE, TILE_SIZE)
+                    rect = pygame.Rect(
+                        col * TILE_SIZE + BOARD_OFFSET_X,
+                        BOARD_OFFSET_Y + row * TILE_SIZE,
+                        TILE_SIZE, TILE_SIZE
+                    )
                     pygame.draw.rect(flash_surface, YELLOW, rect)
 
-                # Flash the tiles
+                # Display the flash effect
                 screen.blit(original_surface, (0, 0))  # Restore the original screen
-                screen.blit(flash_surface, (0, 0))  # Overlay the translucent effect
-                pygame.display.flip()
-                pygame.time.wait(500)
+                screen.blit(flash_surface, (0, 0))  # Overlay the flash
 
-                # Display the word, its reading, and meaning
-                screen.blit(original_surface, (0, 0))  # Restore the original screen
-                kanji_surface = FONT.render(word, True, WHITE)
-                kanji_rect = kanji_surface.get_rect(topleft=(100, HEIGHT - 80))
-                screen.blit(kanji_surface, kanji_rect)
-
-                # Display the reading (furigana)
-                furigana_surface = pygame.font.Font("NotoSansJP-Black.ttf", 16).render(
-                    ", ".join(readings), True, WHITE
-                )
-                furigana_rect = furigana_surface.get_rect(midbottom=(kanji_rect.centerx, kanji_rect.top + 10))
-                screen.blit(furigana_surface, furigana_rect)
-
-                # Display the meaning
-                meaning_surface = pygame.font.Font("NotoSansJP-Black.ttf", 20).render(f"- {meaning}", True, WHITE)
-                # Position the meaning's middle left at the middle of the Kanji's right
-                meaning_x = kanji_rect.midright[0] + 10  # 10 pixels to the right of the Kanji
-                meaning_y = kanji_rect.midright[1]  # Align vertically with the middle of the Kanji
-                meaning_rect = meaning_surface.get_rect(midleft=(meaning_x, meaning_y))
-                screen.blit(meaning_surface, meaning_rect)
-
+                # Render kanji, readings, and meaning
+                readings, meaning = get_word_info_cached(word)
+                draw_word_details(word, readings, meaning)
                 pygame.display.flip()
                 pygame.time.wait(1000)
 
-                # Add the word to the list of displayed words
-                displayed_words.append(word)
+                # Update the score and mark the word as used
                 score += 1
                 used_words.append(word)
+                displayed_words.append(word)
+
+
+def get_word_info_cached(word):
+    """
+    Fetch word details from the cache or fetch from the Jisho API if not cached.
+    Handles partial matches, no matches, and errors, while caching results.
+    """
+    global hovered_word_data_cache
+
+    # Check cache first
+    if word in hovered_word_data_cache:
+        return hovered_word_data_cache[word]
+
+    try:
+        # Fetch from Jisho API
+        response = session.get(f"https://jisho.org/api/v1/search/words?keyword={word}")
+        if response.status_code == 200:
+            data = response.json()
+            if data['data']:
+                # Iterate through results to find exact or partial matches
+                for word_data in data['data']:
+                    for japanese_entry in word_data.get("japanese", []):
+                        if japanese_entry.get("word") == word or japanese_entry.get("reading") == word:
+                            readings = [japanese_entry.get("reading", "")]
+                            meanings = word_data['senses'][0]['english_definitions']
+                            result = (readings, ", ".join(meanings))
+                            hovered_word_data_cache[word] = result  # Cache the result
+                            return result
+
+                # No exact match, but partial data exists
+                partial_result = [""], "//partial match - click on word to see meaning//"
+                hovered_word_data_cache[word] = partial_result  # Cache partial result
+                return partial_result
+
+            # No dictionary match
+            no_match_result = [""], "//no dictionary match - click on word for google search//"
+            hovered_word_data_cache[word] = no_match_result  # Cache no match result
+            return no_match_result
+
+        # Non-200 response code
+        error_result = [""], f"Error: API returned status code {response.status_code}"
+        hovered_word_data_cache[word] = error_result  # Cache the error
+        return error_result
+
+    except Exception as e:
+        # Handle network or JSON parsing errors
+        error_result = ["Error"], f"Error: {str(e)}"
+        hovered_word_data_cache[word] = error_result  # Cache the error
+        return error_result
+
+
+def draw_word_details(word, readings, meaning):
+    """
+    Display the selected word, its readings, and meanings at the bottom of the screen.
+    """
+    # Clear the bottom area for text
+    pygame.draw.rect(screen, BLACK, (0, HEIGHT - 100, WIDTH, 100))
+
+    # Render kanji
+    kanji_surface = FONT.render(word, True, WHITE)
+    kanji_rect = kanji_surface.get_rect(topleft=(100, HEIGHT - 80))
+    screen.blit(kanji_surface, kanji_rect)
+
+    # Render furigana (readings)
+    furigana_surface = pygame.font.Font("NotoSansJP-Black.ttf", 16).render(", ".join(readings), True, WHITE)
+    furigana_rect = furigana_surface.get_rect(midbottom=(kanji_rect.centerx, kanji_rect.top + 10))
+    screen.blit(furigana_surface, furigana_rect)
+
+    # Render meaning
+    meaning_surface = pygame.font.Font("NotoSansJP-Black.ttf", 20).render(f"- {meaning}", True, WHITE)
+    meaning_x = kanji_rect.midright[0] + 10
+    meaning_y = kanji_rect.midright[1]
+    meaning_rect = meaning_surface.get_rect(midleft=(meaning_x, meaning_y))
+    screen.blit(meaning_surface, meaning_rect)
+
+    pygame.display.flip()
+
 
 
 hovered_word = None  # Current hovered word
@@ -509,7 +467,7 @@ def draw_right_words():
             if hovered_word != word:
                 hovered_word = word
                 if word not in hovered_word_data_cache:
-                    readings, meaning = get_word_info(word)
+                    readings, meaning = get_word_info_cached(word)
                     hovered_word_data_cache[word] = (readings, meaning)
 
 
@@ -572,7 +530,7 @@ def draw_centered_words():
             if hovered_word != word:
                 hovered_word = word
                 if word not in hovered_word_data_cache:
-                    readings, meaning = get_word_info(word)
+                    readings, meaning = get_word_info_cached(word)
                     hovered_word_data_cache[word] = (readings, meaning)
 
 
