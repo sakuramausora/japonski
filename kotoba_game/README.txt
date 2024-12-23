@@ -2,6 +2,9 @@
 
 Simple game to make Japanese words from given characters.
 
+How to play & .exe file:
+https://sakuramau.itch.io/kotoba
+
 Written in PyGame.
 
 # Licenses
