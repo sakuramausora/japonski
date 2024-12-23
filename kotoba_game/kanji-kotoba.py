@@ -267,7 +267,7 @@ def end_game():
         # Redraw words and handle hover/clicks
         displayed_word_rects = draw_centered_words()
 
-        # Display "Game complete!" and the final score
+        # Display "Game complete!" and all the words
         final_score_text = FONT.render("Game Complete!", True, WHITE)
         final_score_rect = final_score_text.get_rect(center=(WIDTH // 2, 100))
         screen.blit(final_score_text, final_score_rect)
